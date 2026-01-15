@@ -1,0 +1,16 @@
+SRC_DIR = src
+BUILD_DIR = build
+
+C_FILES = $(wildcard $(SRC_DIR)/*.c)
+OBJ_FILES = $(C_FILES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+
+all : networking.elf
+
+networking.elf: $(OBJ_FILES)
+	gcc -o networking.elf $(OBJ_FILES)
+
+$(BUILD_DIR)/%.o : $(SRC_DIR)/%.c
+	gcc -c $< -o $@ -MMD
+
+clean :
+	rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/*.d networking.elf
