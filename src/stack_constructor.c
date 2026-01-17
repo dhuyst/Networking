@@ -18,7 +18,7 @@ struct nw_layer *construct_stack(int fd)
     struct nw_layer *udp = malloc(sizeof(struct nw_layer));
     struct nw_layer *tcp = malloc(sizeof(struct nw_layer));
 
-    char *ipv4_addr = DUMMY_IPV4;
+    unsigned char *ipv4_addr = DUMMY_IPV4;
 
     tap->name = "tap";
     tap->send_down = &write_to_tap;

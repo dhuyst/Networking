@@ -53,7 +53,10 @@ int receive_arp_up(struct nw_layer *self, struct pkt *packet)
     else
     {
         printf("Unknown ARP operation: %u\n", op);
+        return -1;
     }
+    
+    return 0;
 }
 
 struct pkt *create_arp_response(struct nw_layer *self, struct pkt *packet, struct arp_header *header, unsigned char *requested_address)

@@ -8,4 +8,4 @@
 #include "tcp.h"
 #include "udp.h"
 
-struct nw_layer *construct_stack();
+struct nw_layer *construct_stack(int fd);
