@@ -7,7 +7,7 @@
 static unsigned char DUMMY_IPV4[4] = {192, 168, 100, 2};
 static unsigned char DUMMY_MAC_ADDR[6] = {0x02, 0x00, 0x00, 0x00, 0x00, 0x01};
 
-struct nw_layer *construct_stack()
+struct nw_layer *construct_stack(int fd)
 {
 
     struct nw_layer *tap = malloc(sizeof(struct nw_layer));
@@ -28,7 +28,9 @@ struct nw_layer *construct_stack()
     tap->ups[0] = eth;
     tap->downs = NULL;
     tap->downs_count = 0;
-    tap->context = NULL;
+    struct tap_context *tap_ctx = malloc(sizeof(struct tap_context));
+    tap_ctx->fd = fd;
+    tap->context = tap_ctx;
 
     eth->name = "ethernet";
     eth->send_down = &send_frame_down;
@@ -41,7 +43,7 @@ struct nw_layer *construct_stack()
     eth->downs = malloc(eth->downs_count * sizeof(struct nw_layer *));
     eth->downs[0] = tap;
     struct ethernet_context *eth_context = malloc(sizeof(struct ethernet_context));
-    memcpy(eth_context->mac, DUMMY_MAC_ADDR, 6);
+    memcpy(eth_context->mac, DUMMY_MAC_ADDR, MAC_ADDR_LEN);
     eth->context = eth_context;
 
     arp->name = "arp";
@@ -56,8 +58,8 @@ struct nw_layer *construct_stack()
     struct arp_context *arp_ctx = malloc(sizeof(struct arp_context));
     struct arp_table *arp_table_head = NULL;
     arp_ctx->arp_table_head = arp_table_head;
-    memcpy(arp_ctx->ipv4_address, DUMMY_IPV4, 4);
-    memcpy(arp_ctx->mac_address, DUMMY_MAC_ADDR, 6);
+    memcpy(arp_ctx->ipv4_address, DUMMY_IPV4, IPV4_ADDR_LEN);
+    memcpy(arp_ctx->mac_address, DUMMY_MAC_ADDR, MAC_ADDR_LEN);
     arp->context = arp_ctx;
 
     ip->name = "ipv4";

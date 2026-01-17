@@ -6,28 +6,9 @@
 #include <string.h>
 #include "types.h"
 
-struct ethernet_context
-{
-    mac_address mac;
-};
-
-struct ethernet_header
-{
-    mac_address dest_mac;
-    mac_address src_mac;
-    unsigned short ethertype;
-} __attribute__((packed));
-
-
-enum ether_type
-{
-    IPV4 = 0x0800,
-    ARP = 0x0806,
-    IPV6 = 0x86DD,
-    VLAN = 0x8100
-};
-
-int receive_frame_up(struct nw_layer *self, const struct pkt *data);
-int send_frame_down(struct nw_layer *self, const struct pkt *data);
-void print_incoming(const struct ethernet_header *header);
-bool relevant_destination_mac(const mac_address dest_mac, struct nw_layer *self);
+int receive_frame_up(struct nw_layer *self, struct pkt *packet);
+int send_frame_down(struct nw_layer *self, struct pkt *packet);
+void print_incoming(struct ethernet_header *header);
+bool relevant_destination_mac(mac_address dest_mac, struct nw_layer *self);
+int send_to_arp(struct nw_layer *self, struct pkt *packet);
+int send_to_ipv4(struct nw_layer *self, struct pkt *packet);

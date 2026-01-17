@@ -1,55 +1,95 @@
 #include "ethernet.h"
 
-int receive_frame_up(struct nw_layer *self, const struct pkt *data)
+int receive_frame_up(struct nw_layer *self, struct pkt *packet)
 {
-    const struct ethernet_header *header = (const struct ethernet_header *)data->data;
+    struct ethernet_header *header = (struct ethernet_header *)packet->data;
 
     if (relevant_destination_mac(header->dest_mac, self) == false)
     {
-        printf("Frame not relevant for us. Ignoring.\n");
-        free(data->data);
+        //printf("Frame not relevant for us. Ignoring.\n");
         return -1;
     }
 
+    memcpy(packet->metadata->src_mac, header->src_mac, MAC_ADDR_LEN);
+    memcpy(packet->metadata->dest_mac, header->dest_mac, MAC_ADDR_LEN);
+
     unsigned short ethertype = ntohs(header->ethertype);
+
+    print_incoming(header);
+
     switch (ethertype)
     {
         case IPV4:
-            printf("This is an IPv4 packet.\n");
+            printf("This is an IPv4 packet.\n\n");
+            send_to_ipv4(self, packet);
             break;
         case ARP:
-            printf("This is an ARP packet.\n");
+            printf("This is an ARP packet.\n\n");
+            send_to_arp(self, packet);
             break;
         case IPV6:
-            printf("This is an IPv6 packet. Not supported yet\n");
+            printf("This is an IPv6 packet. Not supported yet\n\n");
+            break;
+        case VLAN:
+            printf("This is a VLAN tagged packet. Not supported yet\n\n");
             break;
         default:
-            printf("Unknown Ethertype: 0x%04x\n", ethertype);
+            printf("Unknown Ethertype: 0x%04x\n\n", ethertype);
             break;
     }
-
-    print_incoming(header);
 
     return 0;
 }
 
-int send_frame_down(struct nw_layer *self, const struct pkt *data)
+int send_frame_down(struct nw_layer *self, struct pkt *packet)
 {
+    struct ethernet_header *header = (struct ethernet_header *)&packet->data[packet->offset];
+    struct ethernet_context *context = (struct ethernet_context *)self->context;
+
+    memcpy(header->dest_mac, header->src_mac, MAC_ADDR_LEN);
+    memcpy(header->src_mac, context->mac, MAC_ADDR_LEN);
+    self->downs[0]->send_down(self->downs[0], packet);
+    return 0;
+}
+
+int send_to_ipv4(struct nw_layer *self, struct pkt *packet)
+{
+    struct pkt ipv4_pkt = {
+        .data = packet->data,
+        .len = packet->len,
+        .offset = packet->offset + sizeof(struct ethernet_header),
+        .metadata = packet->metadata};
+
+    for (int i = 0; i < self->ups_count; i++)
+        if (strcmp(self->ups[i]->name, "ipv4") == 0)
+            self->ups[i]->rcv_up(self->ups[i], &ipv4_pkt);
+
+    return 0;
+}
+
+int send_to_arp(struct nw_layer *self, struct pkt *packet)
+{
+    packet->offset += sizeof(struct ethernet_header);
+
+    for (int i = 0; i < self->ups_count; i++)
+        if (strcmp(self->ups[i]->name, "arp") == 0)
+            self->ups[i]->rcv_up(self->ups[i], packet);
+
     return 0;
 }
 
 // Only procees frames sent to stack's MAC or ipv4 broadcast
 // No ipv6 mulicast support yet
-bool relevant_destination_mac(const mac_address dest_mac, struct nw_layer *self)
+bool relevant_destination_mac(mac_address dest_mac, struct nw_layer *self)
 {
     struct ethernet_context *context = (struct ethernet_context *)self->context;
 
-    if (memcmp(dest_mac, IPV4_BROADCAST_MAC, 6) == 0 || memcmp(dest_mac, context->mac, 6) == 0)
+    if (memcmp(dest_mac, IPV4_BROADCAST_MAC, MAC_ADDR_LEN) == 0 || memcmp(dest_mac, context->mac, MAC_ADDR_LEN) == 0)
         return true;
     return false;
 }
 
-void print_incoming(const struct ethernet_header *header)
+void print_incoming(struct ethernet_header *header)
 {
     printf("Incoming Ethernet Frame:\n");
     printf("Source MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
@@ -60,5 +100,5 @@ void print_incoming(const struct ethernet_header *header)
            header->dest_mac[0], header->dest_mac[1],
            header->dest_mac[2], header->dest_mac[3],
            header->dest_mac[4], header->dest_mac[5]);
-    printf("Ethertype: 0x%04x\n\n", ntohs(header->ethertype));
+    printf("Ethertype: 0x%04x\n", ntohs(header->ethertype));
 }

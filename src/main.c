@@ -15,13 +15,15 @@ int get_tap(char *name, int flags);
 int activate_tap(char *if_name);
 int set_ipv4_addr(char *name, char *address);
 
+const unsigned char IPV4_BROADCAST_MAC[MAC_ADDR_LEN] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
 int main()
 {
     int tap_fd;
     if ((tap_fd = tap_setup()) < 0)
         return 1;
 
-    struct nw_layer *tap = construct_stack();
+    struct nw_layer *tap = construct_stack(tap_fd);
     
     start_listening(tap_fd, tap);
 
