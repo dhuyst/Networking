@@ -97,8 +97,8 @@ struct arp_header
     unsigned char hw_addr_len;
     unsigned char proto_addr_len;
     uint16_t operation;
-    mac_address sender_mac;
-    ipv4_address sender_ip;
-    mac_address target_mac;
-    ipv4_address target_ip;
+    mac_address sender_mac; // source_mac
+    ipv4_address sender_ip; // source_ip
+    mac_address target_mac; // dest_mac
+    ipv4_address target_ip; // dest_ip
 } __attribute__((packed));
