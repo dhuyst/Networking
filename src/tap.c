@@ -48,6 +48,8 @@ int start_listening(int fd, struct nw_layer *tap)
 
         tap->rcv_up(tap, packet);
         free(buffer);
+        free(packet->metadata);
+        free(packet);
     }
 }
 
