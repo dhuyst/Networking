@@ -1,58 +1,57 @@
 #include "ethernet.h"
 
-int receive_frame_up(struct nw_layer *self, struct pkt *packet)
+pkt_result receive_frame_up(struct nw_layer *self, struct pkt *packet)
 {
     struct ethernet_header *header = (struct ethernet_header *)packet->data;
+    print_incoming(header);
 
     if (relevant_destination_mac(header->dest_mac, self) == false)
     {
-        //printf("Frame not relevant for us. Ignoring.\n");
-        return -1;
+        printf("Frame not relevant for us. Ignoring.\n");
+        return FRAME_TARGET_NOT_RELEVANT;
     }
 
     memcpy(packet->metadata->src_mac, header->src_mac, MAC_ADDR_LEN);
     memcpy(packet->metadata->dest_mac, header->dest_mac, MAC_ADDR_LEN);
 
     unsigned short ethertype = ntohs(header->ethertype);
-
-    print_incoming(header);
-
     switch (ethertype)
     {
         case IPV4:
             printf("This is an IPv4 packet.\n\n");
-            send_to_ipv4(self, packet);
+            return send_to_ipv4(self, packet);
             break;
         case ARP:
             printf("This is an ARP packet.\n\n");
-            send_to_arp(self, packet);
+            return send_to_arp(self, packet);
             break;
         case IPV6:
+            return ETHERTYPE_NOT_SUPPORTED;
             printf("This is an IPv6 packet. Not supported yet\n\n");
             break;
         case VLAN:
+            return ETHERTYPE_NOT_SUPPORTED;
             printf("This is a VLAN tagged packet. Not supported yet\n\n");
             break;
         default:
             printf("Unknown Ethertype: 0x%04x\n\n", ethertype);
+            return ETHERTYPE_NOT_SUPPORTED;
             break;
     }
-
-    return 0;
 }
 
-int send_frame_down(struct nw_layer *self, struct pkt *packet)
+pkt_result send_frame_down(struct nw_layer *self, struct pkt *packet)
 {
     struct ethernet_header *header = (struct ethernet_header *)&packet->data[packet->offset];
     struct ethernet_context *context = (struct ethernet_context *)self->context;
 
     memcpy(header->dest_mac, header->src_mac, MAC_ADDR_LEN);
     memcpy(header->src_mac, context->mac, MAC_ADDR_LEN);
-    self->downs[0]->send_down(self->downs[0], packet);
-    return 0;
+
+    return self->downs[0]->send_down(self->downs[0], packet);
 }
 
-int send_to_ipv4(struct nw_layer *self, struct pkt *packet)
+pkt_result send_to_ipv4(struct nw_layer *self, struct pkt *packet)
 {
     struct pkt ipv4_pkt = {
         .data = packet->data,
@@ -62,20 +61,20 @@ int send_to_ipv4(struct nw_layer *self, struct pkt *packet)
 
     for (size_t i = 0; i < self->ups_count; i++)
         if (strcmp(self->ups[i]->name, "ipv4") == 0)
-            self->ups[i]->rcv_up(self->ups[i], &ipv4_pkt);
+            return self->ups[i]->rcv_up(self->ups[i], &ipv4_pkt);
 
-    return 0;
+    return LAYER_NAME_NOT_FOUND;
 }
 
-int send_to_arp(struct nw_layer *self, struct pkt *packet)
+pkt_result send_to_arp(struct nw_layer *self, struct pkt *packet)
 {
     packet->offset += sizeof(struct ethernet_header);
 
     for (size_t i = 0; i < self->ups_count; i++)
         if (strcmp(self->ups[i]->name, "arp") == 0)
-            self->ups[i]->rcv_up(self->ups[i], packet);
+            return self->ups[i]->rcv_up(self->ups[i], packet);
 
-    return 0;
+    return LAYER_NAME_NOT_FOUND;
 }
 
 // Only procees frames sent to stack's MAC or ipv4 broadcast

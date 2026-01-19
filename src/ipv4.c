@@ -1,11 +1,11 @@
 #include "ipv4.h"
 
-int receive_ipv4_up(struct nw_layer *self, struct pkt *data)
+pkt_result receive_ipv4_up(struct nw_layer *self, struct pkt *data)
 {
-    return 0;
+    return NOT_IMPLEMENTED_YET;
 }
 
-int send_ipv4_down(struct nw_layer *self, struct pkt *data)
+pkt_result send_ipv4_down(struct nw_layer *self, struct pkt *data)
 {
-    return 0;
+    return NOT_IMPLEMENTED_YET;
 }

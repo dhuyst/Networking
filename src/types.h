@@ -24,6 +24,23 @@ extern const unsigned char DUMMY_MAC_ADDR[6];
 typedef unsigned char mac_address[MAC_ADDR_LEN];
 typedef unsigned char ipv4_address[IPV4_ADDR_LEN];
 typedef uint16_t protocol_type;
+typedef enum pkt_result pkt_result;
+
+// ===== Result Codes ====
+enum pkt_result
+{
+    REPLY_SENT = 0,
+    REPLY_WRITE_ERROR = -101,
+    FRAME_TARGET_NOT_RELEVANT = -201,
+    ETHERTYPE_NOT_SUPPORTED = -202,
+    ARP_RQST_HW_TYPE_NOT_SUPPORTED = -251,
+    ARP_RQST_PRTCL_TYPE_NOT_SUPPORTED = -252,
+    ARP_RQST_TARGET_NOT_RELEVANT = -253,
+    ARP_UNKNOWN_OPERATION = -254,
+    LAYER_NAME_NOT_FOUND = -404,
+
+    NOT_IMPLEMENTED_YET = -1
+};
 
 // ===== Packet Structures =====
 struct pkt_metadata
@@ -47,8 +64,8 @@ struct pkt
 struct nw_layer
 {
     char *name;
-    int (*send_down)(struct nw_layer *self, struct pkt *packet);
-    int (*rcv_up)(struct nw_layer *self, struct pkt *packet);
+    enum pkt_result (*send_down)(struct nw_layer *self, struct pkt *packet);
+    enum pkt_result (*rcv_up)(struct nw_layer *self, struct pkt *packet);
     struct nw_layer **ups;
     struct nw_layer **downs;
     size_t ups_count;

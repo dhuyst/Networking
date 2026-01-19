@@ -1,16 +1,15 @@
 #include "arp.h"
 
-int receive_arp_up(struct nw_layer *self, struct pkt *packet)
+pkt_result receive_arp_up(struct nw_layer *self, struct pkt *packet)
 {
     struct arp_header *arp_header = (struct arp_header *)&packet->data[packet->offset];
-
     uint16_t hw_type = ntohs(arp_header->hw_type);
 
     // ONLY SUPPORTING ETHERNET
     if (hw_type != 1)
     {
         printf("Unsupported hardware type: %u\n", hw_type);
-        return -1;
+        return ARP_RQST_HW_TYPE_NOT_SUPPORTED;
     }
 
     uint16_t op = ntohs(arp_header->operation);
@@ -29,30 +28,30 @@ int receive_arp_up(struct nw_layer *self, struct pkt *packet)
                 break;
             default:
                 printf("Unsupported protocol type in ARP request: 0x%04x\n", proto_type);
-                return -1;
+                return ARP_RQST_PRTCL_TYPE_NOT_SUPPORTED;
         }
 
         if (memcmp(arp_header->dest_ip, proto_my_address, proto_addr_len) != 0)
         {
             printf("ARP request not for us. Ignoring.\n\n");
-            return -1;
+            return ARP_RQST_TARGET_NOT_RELEVANT;
         }
 
         printf("Received ARP REQUEST\n");
         struct pkt *arp_response = create_arp_response(packet, arp_header, ((struct arp_context *)self->context)->mac_address);
-        send_arp_down(self, arp_response);
+        return send_arp_down(self, arp_response);
     }
 
     else if (op == ARP_REPLY)
     {
         printf("Received ARP REPLY\n");
-        return 0;
+        return NOT_IMPLEMENTED_YET;
     }
 
     else
     {
         printf("Unknown ARP operation: %u\n", op);
-        return -1;
+        return ARP_UNKNOWN_OPERATION;
     }
 }
 
@@ -97,13 +96,11 @@ void print_arp_header(struct arp_header *arp_header)
            arp_header->dest_ip[2], arp_header->dest_ip[3]);
 }
 
-int send_arp_down(struct nw_layer *self, struct pkt *packet)
+pkt_result send_arp_down(struct nw_layer *self, struct pkt *packet)
 {
     printf("SENDING RESPONSE DOWN \n");
     print_arp_header((struct arp_header *)&packet->data[packet->offset]);
 
     packet->offset -= sizeof(struct ethernet_header);
-    self->downs[0]->send_down(self->downs[0], packet);
-
-    return 0;
+    return self->downs[0]->send_down(self->downs[0], packet);
 }

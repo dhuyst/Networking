@@ -45,21 +45,20 @@ int start_listening(int fd, struct nw_layer *tap)
             free(packet);
             return -1;
         }
-
-        tap->rcv_up(tap, packet);
+        
+        int result = tap->rcv_up(tap, packet);
         free(buffer);
         free(packet->metadata);
         free(packet);
     }
 }
 
-int send_up_to_ethernet(struct nw_layer *tap, struct pkt *data)
+pkt_result send_up_to_ethernet(struct nw_layer *tap, struct pkt *data)
 {
-    tap->ups[0]->rcv_up(tap->ups[0], data);
-    return 0;
+    return tap->ups[0]->rcv_up(tap->ups[0], data);
 }
 
-int write_to_tap(struct nw_layer *tap, struct pkt *data)
+pkt_result write_to_tap(struct nw_layer *tap, struct pkt *data)
 {
     struct tap_context *tap_ctx = (struct tap_context *)tap->context;
     int fd = tap_ctx->fd;
@@ -69,7 +68,7 @@ int write_to_tap(struct nw_layer *tap, struct pkt *data)
     {
         perror("Writing to TAP interface");
         close(fd);
-        return -1;
+        return REPLY_WRITE_ERROR;
     }
-    return 0;
+    return REPLY_SENT;
 }
