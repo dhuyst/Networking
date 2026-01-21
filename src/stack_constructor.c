@@ -32,8 +32,9 @@ struct nw_layer *construct_stack(int fd)
     eth->ups[1] = ip;
     eth->downs = malloc(eth->downs_count * sizeof(struct nw_layer *));
     eth->downs[0] = tap;
-    struct ethernet_context *eth_context = malloc(sizeof(struct ethernet_context));
-    memcpy(eth_context->mac, DUMMY_MAC_ADDR, MAC_ADDR_LEN);
+    struct ethernet_context *eth_context =
+        malloc(sizeof(struct ethernet_context));
+    memcpy(eth_context->mac_address, DUMMY_MAC_ADDR, MAC_ADDR_LEN);
     eth->context = eth_context;
 
     arp->name = "arp";
@@ -45,8 +46,8 @@ struct nw_layer *construct_stack(int fd)
     arp->downs = malloc(arp->downs_count * sizeof(struct nw_layer *));
     arp->downs[0] = eth;
     struct arp_context *arp_ctx = malloc(sizeof(struct arp_context));
-    struct arp_table *arp_table_head = NULL;
-    arp_ctx->arp_table_head = arp_table_head;
+    struct arp_table *arp_table_head = malloc(sizeof(struct arp_table));
+    arp_ctx->arp_table = arp_table_head;
     memcpy(arp_ctx->ipv4_address, DUMMY_IPV4, IPV4_ADDR_LEN);
     memcpy(arp_ctx->mac_address, DUMMY_MAC_ADDR, MAC_ADDR_LEN);
     arp->context = arp_ctx;
@@ -62,9 +63,11 @@ struct nw_layer *construct_stack(int fd)
     ip->ups[2] = tcp;
     ip->downs = malloc(ip->downs_count * sizeof(struct nw_layer *));
     ip->downs[0] = eth;
-    struct ipv4_context *ipv4_ctx = malloc(sizeof(struct ipv4_context));
-    memcpy(ipv4_ctx->ipv4_address, DUMMY_IPV4, IPV4_ADDR_LEN);
-    ip->context = ipv4_ctx;
+    struct ipv4_context *ipv4_context = malloc(sizeof(struct ipv4_context));
+    memcpy(ipv4_context->ipv4_address, DUMMY_IPV4, IPV4_ADDR_LEN);
+    ipv4_context->arp_layer = arp;
+    ipv4_context->routing_table = create_routing_table();
+    ip->context = ipv4_context;
 
     icmp->name = "icmp";
     icmp->send_down = &send_icmp_down;
@@ -80,16 +83,18 @@ struct nw_layer *construct_stack(int fd)
     udp->rcv_up = &receive_udp_up;
     udp->ups = NULL;
     udp->ups_count = 0;
-    udp->downs = (struct nw_layer *[]){ip};
     udp->downs_count = 1;
+    udp->downs = malloc(udp->downs_count * sizeof(struct nw_layer *));
+    udp->downs[0] = ip;
 
     tcp->name = "tcp";
     tcp->send_down = &send_tcp_down;
     tcp->rcv_up = &receive_tcp_up;
     tcp->ups = NULL;
     tcp->ups_count = 0;
-    tcp->downs = (struct nw_layer *[]){ip};
     tcp->downs_count = 1;
+    tcp->downs = malloc(tcp->downs_count * sizeof(struct nw_layer *));
+    tcp->downs[0] = ip;
 
     return tap;
 }
