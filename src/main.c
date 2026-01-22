@@ -1,7 +1,6 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <linux/if_tun.h>
-#include <linux/rtnetlink.h>
+#include <netinet/in.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -9,6 +8,19 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "stack_constructor.h"
+
+#ifdef __linux__
+#include <linux/if_tun.h>
+#include <linux/rtnetlink.h>
+#elif defined(__APPLE__) || defined(__MACH__)
+#include <sys/socket.h>
+#include <sys/kern_control.h>
+#include <net/if_utun.h>
+#define TUNSETIFF _IOW('T', 202, int)
+#define IFF_TUN 0x0001
+#define IFF_TAP 0x0002
+#define IFF_NO_PI 0x1000
+#endif
 
 int tap_setup();
 int get_tap(char *name, int flags);
