@@ -109,7 +109,8 @@ bool relevant_destination_ip(ipv4_address dest_ip, struct nw_layer *self)
 }
 
 // calculate one's complement of 16bit one's complement sum of all 16bit units
-// in header header length in 32bit units
+// in header header 
+// length in 32bit units => no odd trailing byte possible
 uint16_t calc_header_checksum(struct ipv4_header *header, size_t header_len)
 {
     // calc sum of all 16 bit units in header
