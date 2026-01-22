@@ -2,44 +2,21 @@
 
 int start_listening(int fd, struct nw_layer *tap)
 {
+    init_buffer_pool();
     for (;;)
     {
-        unsigned char *buffer = malloc(MAX_ETH_FRAME_SIZE);
-        if (buffer == NULL)
-        {
-            perror("Allocating buffer for TAP read");
-            close(fd);
-            return -1;
-        }
-
-        ssize_t nread = read(fd, buffer, MAX_ETH_FRAME_SIZE);
+        struct pkt *packet = allocate_pkt();
+        ssize_t nread = read(fd, packet->data, MAX_ETH_FRAME_SIZE);
         if (nread < 0)
-        {
-            perror("Reading from TAP interface");
-            close(fd);
-            free(buffer);
-            return -1;
-        }
+            continue;
 
-        struct pkt *packet = malloc(sizeof(struct pkt));
-        if (packet == NULL)
-        {
-            perror("Allocating packet structure");
-            close(fd);
-            free(buffer);
-            return -1;
-        }
-
-        *packet =
-            (struct pkt){.data = buffer, .len = (size_t)nread, .offset = 0};
+        packet->len = (size_t)nread;
+        packet->offset = 0;
 
         pkt_result result = tap->rcv_up(tap, packet);
         printf("%d \n\n", result);
-        if (result != PACKET_QUEUED)
-        {
-            free(buffer);
-            free(packet);
-        }
+        if (result != SENT)
+            release_pkt(packet);
     }
 }
 
@@ -61,7 +38,7 @@ pkt_result write_to_tap(struct nw_layer *tap, struct pkt *packet)
 
         return WRITE_ERROR;
     }
-
+/*
     FILE *log = fopen("out.txt", "a");
     if (log)
     {
@@ -70,6 +47,7 @@ pkt_result write_to_tap(struct nw_layer *tap, struct pkt *packet)
         fprintf(log, "\n");
         fclose(log);
     }
-
+*/
+    release_pkt(packet);
     return SENT;
 }

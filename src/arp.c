@@ -63,7 +63,6 @@ void flush_q(struct nw_layer *self, struct arp_table_node *arp_entry)
         current->packet->metadata.ethertype = htons(IPV4);
 
         self->downs[0]->send_down(self->downs[0], current->packet);
-        free(current->packet);
         free(current);
         current = next;
     }

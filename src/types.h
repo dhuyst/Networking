@@ -98,6 +98,7 @@ struct pkt
     size_t len;
     size_t offset; // Offset to the start of the current layer's header within
                    // data, no need to strip headers and copy
+    uint8_t ref_count;
     struct pkt_metadata metadata;
 };
 

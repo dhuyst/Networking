@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "buffer_pool.h"
 #include "types.h"
 
 int start_listening(int fd, struct nw_layer *tap);
